@@ -1,0 +1,293 @@
+package dao;
+
+import entity.SanPham;
+import connectSQL.KetNoiSQL;
+
+import java.sql.*;
+import java.util.ArrayList;
+
+
+	public class SanPhamDAO {
+        private Connection conn;
+        
+        public SanPhamDAO() {
+            conn = KetNoiSQL.getInstance().getConnection();
+        }
+        
+        public ArrayList<SanPham> getList() {
+            ArrayList<SanPham> list = new ArrayList<>();
+            String sql = """
+                SELECT sp.MaSP, sp.TenSP, sp.GiaBan, sp.SoLuong, sp.DonVi, 
+                       sp.HinhAnh, sp.TrangThai, dm.TenDM
+                FROM SanPham sp 
+                LEFT JOIN DanhMuc dm ON sp.MaDM = dm.MaDM
+                ORDER BY sp.MaSP
+            """;
+                
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                
+                System.out.println("Executing SQL query for getList()...");
+                
+                while(rs.next()) {
+                    try {
+                        SanPham sp = new SanPham();
+                        sp.setMaSP(rs.getString("MaSP"));
+                        sp.setTenSP(rs.getString("TenSP"));
+                        sp.setTenDM(rs.getString("TenDM"));
+                        sp.setGiaBan(rs.getDouble("GiaBan"));
+                        sp.setSoLuong(rs.getInt("SoLuong"));
+                        sp.setDonVi(rs.getString("DonVi"));
+                        sp.setHinhAnh(rs.getString("HinhAnh"));
+                        sp.setTrangThai(rs.getString("TrangThai"));
+                        
+                        list.add(sp);
+                        
+                        System.out.println("Loaded product: " + sp.getMaSP() + 
+                                         " - " + sp.getTenSP() + 
+                                         " - " + sp.getTenDM() +
+                                         " - " + sp.getGiaBan() +
+                                         " - " + sp.getSoLuong());
+                    } catch(SQLException e) {
+                        System.err.println("Error processing row for product: ");
+                        e.printStackTrace();
+                    }
+                }
+                
+                System.out.println("Total products loaded: " + list.size());
+                
+            } catch(SQLException e) {
+                System.err.println("Error executing getList query: ");
+                e.printStackTrace();
+            }
+            
+            return list;
+        }
+        public ArrayList<SanPham> getByCategory(String tenDanhMuc) {
+            ArrayList<SanPham> list = new ArrayList<>();
+            String sql = """
+                SELECT sp.*, dm.TenDM 
+                FROM SanPham sp 
+                JOIN DanhMuc dm ON sp.MaDM = dm.MaDM 
+                WHERE dm.TenDM = ?
+            """;
+            try {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setString(1, tenDanhMuc);
+                ResultSet rs = ps.executeQuery();
+                
+                while(rs.next()) {
+                    SanPham sp = new SanPham();
+                    sp.setMaSP(rs.getString("MaSP"));
+                    sp.setTenSP(rs.getString("TenSP"));
+                    sp.setTenDM(rs.getString("maDM"));
+                    sp.setGiaBan(rs.getDouble("GiaBan"));
+                    sp.setSoLuong(rs.getInt("SoLuong"));
+                    sp.setDonVi(rs.getString("DonVi"));
+                    sp.setHinhAnh(rs.getString("HinhAnh"));
+                    sp.setTrangThai(rs.getString("TrangThai"));
+                    list.add(sp);
+                }
+            } catch(SQLException e) {
+                e.printStackTrace();
+            }
+            return list;
+        }
+        
+        // Thêm sản phẩm mới
+
+        public boolean add(SanPham sp) {
+            String sql = "INSERT INTO SanPham(MaSP, TenSP, MaDM, GiaBan, SoLuong, DonVi, HinhAnh, TrangThai) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            try {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setString(1, sp.getMaSP());
+                ps.setString(2, sp.getTenSP());
+                ps.setString(3, getMaDM(sp.getTenDM())); // Lấy mã danh mục từ tên
+                ps.setDouble(4, sp.getGiaBan());
+                ps.setInt(5, sp.getSoLuong());
+                ps.setString(6, sp.getDonVi());
+                ps.setString(7, sp.getHinhAnh());
+                ps.setString(8, sp.getTrangThai());
+                
+                return ps.executeUpdate() > 0;
+            } catch(SQLException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+        
+        public boolean update(SanPham sp) {
+            String sql = """
+                UPDATE SanPham 
+                SET TenSP=?, MaDM=?, GiaBan=?, SoLuong=?, 
+                    DonVi=?, HinhAnh=?, TrangThai=? 
+                WHERE MaSP=?
+            """;
+            
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                String maDM = getMaDM(sp.getTenDM());
+                if (maDM == null) {
+                    System.err.println("Could not find MaDM for TenDM: " + sp.getTenDM());
+                    return false;
+                }
+                
+                ps.setString(1, sp.getTenSP());
+                ps.setString(2, maDM);
+                ps.setDouble(3, sp.getGiaBan());
+                ps.setInt(4, sp.getSoLuong());
+                ps.setString(5, sp.getDonVi());
+                ps.setString(6, sp.getHinhAnh());
+                ps.setString(7, sp.getTrangThai());
+                ps.setString(8, sp.getMaSP());
+                
+                int result = ps.executeUpdate();
+                System.out.println("Update product result: " + result + " rows affected");
+                
+                // Cập nhật trạng thái dựa trên số lượng
+                if (result > 0) {
+                    updateStatus(sp.getMaSP());
+                }
+                
+                return result > 0;
+                
+            } catch(SQLException e) {
+                System.err.println("Error in update: ");
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        // Phương thức lấy thông tin sản phẩm theo mã
+        public SanPham getById(String maSP) {
+            String sql = """
+                SELECT sp.MaSP, sp.TenSP, sp.GiaBan, sp.SoLuong, 
+                       sp.DonVi, sp.HinhAnh, sp.TrangThai, dm.TenDM
+                FROM SanPham sp 
+                LEFT JOIN DanhMuc dm ON sp.MaDM = dm.MaDM
+                WHERE sp.MaSP = ?
+            """;
+            
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, maSP);
+                
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        SanPham sp = new SanPham();
+                        sp.setMaSP(rs.getString("MaSP"));
+                        sp.setTenSP(rs.getString("TenSP"));
+                        sp.setTenDM(rs.getString("TenDM"));
+                        sp.setGiaBan(rs.getDouble("GiaBan"));
+                        sp.setSoLuong(rs.getInt("SoLuong"));
+                        sp.setDonVi(rs.getString("DonVi"));
+                        sp.setHinhAnh(rs.getString("HinhAnh"));
+                        sp.setTrangThai(rs.getString("TrangThai"));
+                        return sp;
+                    }
+                }
+            } catch (SQLException e) {
+                System.err.println("Error in getById: ");
+                e.printStackTrace();
+            }
+            return null;
+        }        
+        // Xóa sản phẩm
+        public boolean delete(String maSP) {
+            String sql = "DELETE FROM SanPham WHERE MaSP=?";
+            try {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setString(1, maSP);
+                return ps.executeUpdate() > 0;
+            } catch(SQLException e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+        
+        // Tìm kiếm sản phẩm
+        public ArrayList<SanPham> search(String keyword) {
+            ArrayList<SanPham> list = new ArrayList<>();
+            String sql = """
+                SELECT sp.*, dm.TenDM 
+                FROM SanPham sp 
+                JOIN DanhMuc dm ON sp.MaDM = dm.MaDM 
+                WHERE sp.TenSP LIKE ? OR dm.TenDM LIKE ?
+            """;
+            try {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setString(1, "%" + keyword + "%");
+                ps.setString(2, "%" + keyword + "%");
+                
+                ResultSet rs = ps.executeQuery();
+                while(rs.next()) {
+                    SanPham sp = new SanPham();
+                    sp.setMaSP(rs.getString("MaSP"));
+                    sp.setTenSP(rs.getString("TenSP"));
+                    sp.setTenDM(rs.getString("TenDM"));
+                    sp.setGiaBan(rs.getDouble("GiaBan"));
+                    sp.setSoLuong(rs.getInt("SoLuong"));
+                    sp.setDonVi(rs.getString("DonVi"));
+                    sp.setHinhAnh(rs.getString("HinhAnh"));
+                    sp.setTrangThai(rs.getString("TrangThai"));
+                    list.add(sp);
+                }
+            } catch(SQLException e) {
+                e.printStackTrace();
+            }
+            return list;
+        }
+        
+ 
+        
+        // Lấy mã danh mục từ tên
+        private String getMaDM(String tenDM) {
+            String maDM = null;
+            String sql = "SELECT MaDM FROM DanhMuc WHERE TenDM = ?";
+            try {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setString(1, tenDM);
+                ResultSet rs = ps.executeQuery();
+                if(rs.next()) {
+                    maDM = rs.getString("MaDM");
+                }
+            } catch(SQLException e) {
+                e.printStackTrace();
+            }
+            return maDM;
+        }
+        
+        // Tự động tạo mã sản phẩm mới
+        public String generateNewId() {
+            String sql = "SELECT MAX(CAST(SUBSTRING(MaSP, 3, LEN(MaSP)) AS INT)) AS MaxID FROM SanPham";
+            try {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery();
+                if(rs.next()) {
+                    int maxId = rs.getInt("MaxID");
+                    return String.format("SP%03d", maxId + 1);
+                }
+            } catch(SQLException e) {
+                e.printStackTrace();
+            }
+            return "SP001";
+        }
+        
+        // Cập nhật trạng thái theo số lượng
+        public void updateStatus(String maSP) {
+            String sql = """
+                UPDATE SanPham SET TrangThai = 
+                CASE 
+                    WHEN SoLuong = 0 THEN N'Hết hàng'
+                    WHEN SoLuong <= 10 THEN N'Sắp hết'
+                    ELSE N'Còn hàng'
+                END
+                WHERE MaSP = ?
+            """;
+            try {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setString(1, maSP);
+                ps.executeUpdate();
+            } catch(SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }

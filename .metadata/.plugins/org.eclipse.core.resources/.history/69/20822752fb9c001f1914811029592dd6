@@ -1,0 +1,35 @@
+package entity;
+import java.util.Date;
+
+public class NhanVien {
+    private String maNV;
+    private String hoTen;
+    private String gioiTinh; 
+    private Date ngaySinh;
+    private String sdt;
+    private String diaChi;
+    private String chucVu;
+    
+    public NhanVien() {
+    }
+    
+    public NhanVien(String maNV, String hoTen, String gioiTinh, Date ngaySinh, 
+                    String sdt, String diaChi, String chucVu) {
+        this.maNV = maNV;
+        this.hoTen = hoTen;
+        this.gioiTinh = gioiTinh;
+        this.ngaySinh = ngaySinh;
+        this.sdt = sdt;
+        this.diaChi = diaChi;
+        this.chucVu = chucVu;
+    }
+
+    // Getters and Setters
+    public String getMaNV() { return maNV; }
+    public void setMaNV(String maNV) { this.maNV = maNV; }
+    public String getHoTen() { return hoTen; }
+    public void setHoTen(String hoTen) { this.hoTen = hoTen; }
+    public String getChucVu() { return chucVu; }
+    public void setChucVu(String chucVu) { this.chucVu = chucVu; }
+    // ...các getter/setter khác
+}

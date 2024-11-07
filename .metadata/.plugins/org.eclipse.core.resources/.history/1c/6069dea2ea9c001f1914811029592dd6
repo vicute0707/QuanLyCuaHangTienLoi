@@ -1,0 +1,51 @@
+package connectSQL;
+import java.sql.Connection;  
+import java.sql.DriverManager;  
+import java.sql.SQLException;  
+
+public class KetNoiSQL {  
+    private String connectionString; 
+    private static MyConnection instance;
+    private Connection connection;
+
+    public KetNoiSQL() {  
+        // Chuỗi kết nối sử dụng Windows Authentication  
+   	 String url = "jdbc:sqlserver://DESKTOP-RE9R3MQ\\VI;databaseName=QuanLyCuaHangTienLoi; trustServerCertificate=true;integratedSecurity=true;";
+   	try {
+    	
+        connection = DriverManager.getConnection(url);
+        System.out.println("Danh nhap thanh cong");
+    } catch (SQLException e1) {
+    	System.out.println("Dang nhap that bai");
+        e1.printStackTrace();
+    }
+    }  
+
+    // Phương thức mở kết nối tới cơ sở dữ liệu  
+    public Connection moKetNoi() {  
+    	Connection connection = null;  
+        try {  
+            // Tải driver JDBC cho SQL Server  
+            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");  
+            connection = DriverManager.getConnection(connectionString);  
+            System.out.println("Kết nối đến cơ sở dữ liệu thành công.");  
+        } catch (ClassNotFoundException e) {  
+            System.out.println("Driver không tìm thấy: " + e.getMessage());  
+        } catch (SQLException ex) {  
+            System.out.println("Lỗi kết nối: " + ex.getMessage());  
+        }  
+        return connection;  
+    }  
+
+    // Phương thức đóng kết nối  
+    public void dongKetNoi(Connection connection) {  
+        if (connection != null) {  
+            try {  
+                connection.close();  
+                System.out.println("Đã đóng kết nối.");  
+            } catch (SQLException ex) {  
+                System.out.println("Lỗi khi đóng kết nối: " + ex.getMessage());  
+            }  
+        }  
+    }  
+}  

@@ -1,0 +1,91 @@
+package dao;
+
+
+import java.sql.*;
+import java.util.*;
+
+import connectSQL.KetNoiSQL;
+
+public class HienThiDAO {
+    private Connection conn;
+    
+    public HienThiDAO() {
+        conn = KetNoiSQL.getInstance().getConnection();  
+        }
+    
+    // Lấy thông tin cho 4 ô thống kê
+    public HashMap<String, Object[]> getThongKeTrangChu() {
+        HashMap<String, Object[]> thongKe = new HashMap<>();
+        
+        try {
+            // 1. Thống kê doanh thu
+            String sqlDoanhThu = """
+                SELECT 
+                    FORMAT(SUM(TongTien), '#,###') as DoanhThu,
+                    FORMAT((SUM(TongTien) - LAG(SUM(TongTien)) OVER (ORDER BY MONTH(NgayTao))) / LAG(SUM(TongTien)) OVER (ORDER BY MONTH(NgayTao)) * 100, '#,##0.0') as PhanTram
+                FROM DonHang 
+                WHERE TrangThai = N'Hoàn thành'
+                GROUP BY MONTH(NgayTao)
+                ORDER BY MONTH(NgayTao) DESC
+            """;
+            PreparedStatement psDoanhThu = conn.prepareStatement(sqlDoanhThu);
+            ResultSet rsDoanhThu = psDoanhThu.executeQuery();
+            if(rsDoanhThu.next()) {
+                Object[] data = {
+                    rsDoanhThu.getString("DoanhThu"),
+                    rsDoanhThu.getDouble("PhanTram")
+                };
+                thongKe.put("DoanhThu", data);
+            }
+            
+            // 2. Thống kê đơn hàng
+            String sqlDonHang = """
+                SELECT 
+                    COUNT(*) as TongDon,
+                    FORMAT((COUNT() - LAG(COUNT()) OVER (ORDER BY MONTH(NgayTao))) / LAG(COUNT(*)) OVER (ORDER BY MONTH(NgayTao)) * 100, '#,##0.0') as PhanTram
+                FROM DonHang
+                GROUP BY MONTH(NgayTao)
+                ORDER BY MONTH(NgayTao) DESC
+            """;
+            PreparedStatement psDonHang = conn.prepareStatement(sqlDonHang);
+            ResultSet rsDonHang = psDonHang.executeQuery();
+            if(rsDonHang.next()) {
+                Object[] data = {
+                    rsDonHang.getString("TongDon"),
+                    rsDonHang.getDouble("PhanTram")
+                };
+                thongKe.put("DonHang", data);
+            }
+            
+            // 3. Thống kê nhân viên
+            String sqlNhanVien = "SELECT COUNT(*) as TongNV FROM NhanVien";
+            PreparedStatement psNhanVien = conn.prepareStatement(sqlNhanVien);
+            ResultSet rsNhanVien = psNhanVien.executeQuery();
+            if(rsNhanVien.next()) {
+                Object[] data = {
+                    rsNhanVien.getString("TongNV"),
+                    5.0  // Giá trị tăng trưởng mặc định
+                };
+                thongKe.put("NhanVien", data);
+            }
+            
+            // 4. Thống kê sản phẩm
+            String sqlSanPham = "SELECT COUNT(*) as TongSP FROM SanPham";
+            PreparedStatement psSanPham = conn.prepareStatement(sqlSanPham);
+            ResultSet rsSanPham = psSanPham.executeQuery();
+            if(rsSanPham.next()) {
+                Object[] data = {
+                    rsSanPham.getString("TongSP"),
+                    15.0  // Giá trị tăng trưởng mặc định
+                };
+                thongKe.put("SanPham", data);
+            }
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return thongKe;
+    }
+}
+

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+    <fullyQualifiedTypeName name="java.lang.String"/>
+    <fullyQualifiedTypeName name="dao.HienThiDAO"/>
+    <fullyQualifiedTypeName name="connectSQL.KetNoiSQL"/>
+    <fullyQualifiedTypeName name="style.RoundedBorder"/>
+    <fullyQualifiedTypeName name="entity.NhanVien"/>
+    <fullyQualifiedTypeName name="dao.NhanVienDAO"/>
+    <fullyQualifiedTypeName name="java.sql.Connection"/>
+    <fullyQualifiedTypeName name="javax.swing.JButton"/>
+    <fullyQualifiedTypeName name="dao.SanPhamDAO"/>
+    <fullyQualifiedTypeName name="java.text.DecimalFormat"/>
+    <fullyQualifiedTypeName name="java.text.NumberFormat"/>
+    <fullyQualifiedTypeName name="java.util.Locale"/>
+    <fullyQualifiedTypeName name="java.util.ArrayList"/>
+    <fullyQualifiedTypeName name="javax.swing.filechooser.FileNameExtensionFilter"/>
+    <fullyQualifiedTypeName name="java.io.File"/>
+    <fullyQualifiedTypeName name="entity.SanPham"/>
+    <fullyQualifiedTypeName name="java.lang.IllegalAccessException"/>
+    <fullyQualifiedTypeName name="java.lang.IllegalArgumentException"/>
+    <fullyQualifiedTypeName name="style.ModernScrollBarUI"/>
+    <fullyQualifiedTypeName name="view.Form_SanPham"/>
+    <fullyQualifiedTypeName name="dao.DanhMucDAO"/>
+</qualifiedTypeNameHistroy>

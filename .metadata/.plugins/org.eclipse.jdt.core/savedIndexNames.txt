@@ -1,0 +1,10 @@
+INDEX VERSION 1.134+D:\QuanLyCuaHangTienLoi\.metadata\.plugins\org.eclipse.jdt.core
+3846202251.index
+2305159235.index
+4285371843.index
+1865797976.index
+2557825009.index
+2965383780.index
+2099513141.index
+2622488088.index
+319456910.index

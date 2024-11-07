@@ -1,0 +1,14 @@
+package entity;
+
+public class SanPham {
+	private String maSP;
+	private String tenSP;
+	private String maDM;
+	private double giaBan;
+	private int soLuong;
+	private String donVi;
+	private String hinhAnh;
+	private String trangThai;
+	
+
+}

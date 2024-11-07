@@ -1,0 +1,40 @@
+package connectSQL;
+
+
+
+public class KetNoiSQL  
+{  
+    private String connectionString;  
+
+    public KetNoiSQL()  
+    {  
+        // Chuỗi kết nối sử dụng Windows Authentication  
+        connectionString = @"Server=DESKTOP-RE9R3MQ\V330;Database=QuanLyCuaHangTienLoi;Integrated Security=True;";  
+    }  
+
+    // Phương thức mở kết nối tới cơ sở dữ liệu  
+    public SqlConnection MoKetNoi()  
+    {  
+        SqlConnection connection = new SqlConnection(connectionString);  
+        try  
+        {  
+            connection.Open();  
+            Console.WriteLine("Kết nối đến cơ sở dữ liệu thành công.");  
+        }  
+        catch (Exception ex)  
+        {  
+            Console.WriteLine("Lỗi kết nối: " + ex.Message);  
+        }  
+        return connection;  
+    }  
+
+    // Phương thức đóng kết nối  
+    public void DongKetNoi(SqlConnection connection)  
+    {  
+        if (connection != null && connection.State == ConnectionState.Open)  
+        {  
+            connection.Close();  
+            Console.WriteLine("Đã đóng kết nối.");  
+        }  
+    }  
+}  

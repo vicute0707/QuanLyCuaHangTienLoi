@@ -1,0 +1,166 @@
+USE master
+GO
+-- Drop database if exists
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'QuanLyCuaHangTienLoi')
+BEGIN
+    DROP DATABASE QuanLyCuaHangTienLoi
+END
+GO
+
+-- Create database
+CREATE DATABASE QuanLyCuaHangTienLoi
+GO
+
+USE QuanLyCuaHangTienLoi
+GO
+
+-- Create Tables
+CREATE TABLE NhanVien(
+    MaNV varchar(10) PRIMARY KEY,
+    HoTen nvarchar(50) NOT NULL,
+    GioiTinh nvarchar(5),
+    NgaySinh date,
+    SDT varchar(15),
+    DiaChi nvarchar(100),
+    ChucVu nvarchar(30)
+)
+GO
+
+CREATE TABLE DanhMuc(
+    MaDM varchar(10) PRIMARY KEY,
+    TenDM nvarchar(50) NOT NULL
+)
+GO
+
+CREATE TABLE SanPham(
+    MaSP varchar(10) PRIMARY KEY,
+    TenSP nvarchar(100) NOT NULL,
+    MaDM varchar(10),
+    GiaBan decimal(12,0) DEFAULT 0,
+    SoLuong int DEFAULT 0,
+    DonVi nvarchar(20),
+    HinhAnh varchar(200),
+    TrangThai nvarchar(30) DEFAULT N'Còn hàng',
+    FOREIGN KEY (MaDM) REFERENCES DanhMuc(MaDM)
+)
+GO
+
+CREATE TABLE DonHang(
+    MaHD varchar(10) PRIMARY KEY,
+    NgayTao datetime DEFAULT GETDATE(),
+    TenKH nvarchar(50),
+    SDT varchar(15),
+    MaNV varchar(10),
+    TongTien decimal(12,0) DEFAULT 0,
+    TrangThai nvarchar(30) DEFAULT N'Chờ thanh toán',
+    FOREIGN KEY (MaNV) REFERENCES NhanVien(MaNV)
+)
+GO
+
+CREATE TABLE ChiTietDonHang(
+    MaHD varchar(10),
+    MaSP varchar(10),
+    SoLuong int NOT NULL,
+    DonGia decimal(12,0) NOT NULL,
+    ThanhTien decimal(12,0) NOT NULL,
+    PRIMARY KEY (MaHD, MaSP),
+    FOREIGN KEY (MaHD) REFERENCES DonHang(MaHD) ON DELETE CASCADE,
+    FOREIGN KEY (MaSP) REFERENCES SanPham(MaSP)
+)
+GO
+
+-- Insert sample data
+INSERT INTO NhanVien VALUES
+('NV001', N'Nguyễn Văn An', N'Nam', '1990-01-01', '0123456789', N'97 Man Thiện, Tp.Thủ Đức', N'Nhân viên bán hàng'),
+('NV002', N'Trần Thị Bình', N'Nữ', '1992-05-15', '0987654321', N'123 Lê Văn Việt, Q9', N'Thu ngân'),
+('NV003', N'Phạm Văn Cường', N'Nam', '1988-11-20', '0369852147', N'45 Võ Văn Ngân, Tp.Thủ Đức', N'Quản lý')
+GO
+
+INSERT INTO DanhMuc VALUES
+('DM01', N'Nước giải khát'),
+('DM02', N'Bánh kẹo'),
+('DM03', N'Thực phẩm'),
+('DM04', N'Đồ dùng'),
+('DM05', N'Khác')
+GO
+
+INSERT INTO SanPham VALUES
+('SP001', N'Coca Cola', 'DM01', 12000, 150, N'Chai', 'coca.png', N'Còn hàng'),
+('SP002', N'Pepsi', 'DM01', 12000, 120, N'Chai', 'pepsi.png', N'Còn hàng'),
+('SP003', N'Mì Hảo Hảo', 'DM03', 4000, 50, N'Gói', 'haohao.png', N'Sắp hết'),
+('SP004', N'Mì Kokomi', 'DM03', 4500, 0, N'Gói', 'kokomi.png', N'Hết hàng'),
+('SP005', N'Bánh Oreo', 'DM02', 15000, 80, N'Hộp', 'oreo.png', N'Còn hàng'),
+('SP006', N'Snack Lays', 'DM02', 10000, 85, N'Gói', 'lays.png', N'Còn hàng'),
+('SP007', N'Kẹo gấu', 'DM02', 10000, 75, N'Gói', 'keo.png', N'Còn hàng'),
+('SP008', N'Fanta', 'DM01', 12000, 90, N'Chai', 'fanta.png', N'Còn hàng')
+GO
+
+INSERT INTO DonHang VALUES
+('HD001', '2024-01-07 13:43:00', N'Nguyễn Văn A', '0123456789', 'NV001', 250000, N'Hoàn thành'),
+('HD002', '2024-01-07 13:43:00', N'Trần Thị B', '0987654321', 'NV002', 480000, N'Đang xử lý'),
+('HD003', '2024-01-07 13:43:00', N'Phạm Văn C', '0369852147', 'NV001', 180000, N'Đã hủy')
+GO
+
+INSERT INTO ChiTietDonHang VALUES
+('HD001', 'SP001', 5, 12000, 60000),
+('HD001', 'SP002', 5, 12000, 60000),
+('HD001', 'SP005', 6, 15000, 90000),
+('HD002', 'SP003', 20, 4000, 80000),
+('HD002', 'SP006', 10, 10000, 100000),
+('HD003', 'SP008', 15, 12000, 180000)
+GO
+
+-- Create stored procedures
+CREATE PROCEDURE ThongKeDoanhThu
+    @TuNgay DATE,
+    @DenNgay DATE
+AS
+BEGIN
+    SELECT 
+        CAST(NgayTao AS DATE) as Ngay,
+        COUNT(MaHD) as SoDonHang,
+        SUM(TongTien) as DoanhThu
+    FROM DonHang
+    WHERE CAST(NgayTao AS DATE) BETWEEN @TuNgay AND @DenNgay
+        AND TrangThai = N'Hoàn thành'
+    GROUP BY CAST(NgayTao AS DATE)
+    ORDER BY CAST(NgayTao AS DATE)
+END
+GO
+
+CREATE PROCEDURE TopSanPhamBanChay
+    @SoLuong INT
+AS
+BEGIN
+    SELECT TOP (@SoLuong)
+        sp.MaSP,
+        sp.TenSP,
+        dm.TenDM,
+        SUM(ct.SoLuong) as TongBan,
+        SUM(ct.ThanhTien) as DoanhThu
+    FROM SanPham sp
+    JOIN ChiTietDonHang ct ON sp.MaSP = ct.MaSP
+    JOIN DonHang dh ON ct.MaHD = dh.MaHD
+    JOIN DanhMuc dm ON sp.MaDM = dm.MaDM
+    WHERE dh.TrangThai = N'Hoàn thành'
+    GROUP BY sp.MaSP, sp.TenSP, dm.TenDM
+    ORDER BY SUM(ct.SoLuong) DESC
+END
+GO
+
+CREATE PROCEDURE ThongKeTheoDanhMuc
+AS
+BEGIN
+    SELECT 
+        dm.TenDM,
+        COUNT(DISTINCT sp.MaSP) as SoSanPham,
+        ISNULL(SUM(ct.SoLuong), 0) as SoLuongBan,
+        ISNULL(SUM(ct.ThanhTien), 0) as DoanhThu
+    FROM DanhMuc dm
+    LEFT JOIN SanPham sp ON dm.MaDM = sp.MaDM
+    LEFT JOIN ChiTietDonHang ct ON sp.MaSP = ct.MaSP
+    LEFT JOIN DonHang dh ON ct.MaHD = dh.MaHD AND dh.TrangThai = N'Hoàn thành'
+    GROUP BY dm.MaDM, dm.TenDM
+    ORDER BY DoanhThu DESC
+END
+GO
